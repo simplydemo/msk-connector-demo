@@ -2,6 +2,8 @@ package io.github.simplydemo;
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -10,10 +12,12 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +25,7 @@ import java.util.concurrent.ExecutionException;
 
 public class App {
 
-    public static final String TOPIC = "HELLOWORLD";
+    public static final String TOPIC = "HELLO_WORLD";
 
     private final String SECRET_NAME;
 
@@ -48,7 +52,9 @@ public class App {
     }
 
     public void createTopic() throws Exception {
-        Map<String, Object> props = getConfig();
+        HashMap<String, Object> props = getConfig();
+        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "60000");
+        props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "60000");
         try (AdminClient adminClient = AdminClient.create(props)) {
             NewTopic newTopic = new NewTopic(TOPIC, 1, (short) 1);
             adminClient.createTopics(Collections.singleton(newTopic)).all().get();
@@ -59,15 +65,25 @@ public class App {
         }
     }
 
-    public void deleteTopic() throws Exception {
-        Map<String, Object> props = getConfig();
+    public void deleteTopics(String... topicNames) throws Exception {
+        HashMap<String, Object> props = getConfig();
+        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "60000");
+        props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "60000");
         try (AdminClient adminClient = AdminClient.create(props)) {
-            NewTopic newTopic = new NewTopic(TOPIC, 1, (short) 1);
-            adminClient.deleteTopics(Collections.singleton(String.valueOf(newTopic))).all().get();
-            System.out.println("Topic deleted successfully");
-        } catch (InterruptedException | ExecutionException e) {
-            //noinspection CallToPrintStackTrace
-            e.printStackTrace();
+            DeleteTopicsResult result = adminClient.deleteTopics(Arrays.asList(topicNames));
+            // 모든 토픽 삭제 작업이 완료될 때까지 대기
+            for (String topicName : topicNames) {
+                KafkaFuture<Void> future = result.values().get(topicName);
+                try {
+                    future.get(); // 삭제 작업이 완료될 때까지 블록
+                    System.out.println("Topic " + topicName + " deleted successfully.");
+                } catch (ExecutionException e) {
+                    System.err.println("Failed to delete topic " + topicName + ": " + e.getCause().getMessage());
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Topic deletion was interrupted: " + e.getMessage());
         }
     }
 
@@ -98,7 +114,7 @@ public class App {
             System.out.println("Subscribed to topic: " + topic);
 
             int emptyPolls = 0;
-            while (emptyPolls < 10) { // 10번의 빈 폴링 후 종료
+            while (emptyPolls < 3) { // 3번 폴링 후 종료
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
                 if (records.isEmpty()) {
                     emptyPolls++;

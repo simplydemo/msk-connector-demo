@@ -8,7 +8,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.util.Map;
 
 @TestMethodOrder(MethodOrderer.MethodName.class) // 메서드 이름 순으로 실행
-public class UtilsTest {
+public class AppTests {
 
     private static final String SECRET_NAME = "AmazonMSK_dev/simplydemo/kylo"; // replace your secretName for MSK
 
@@ -61,10 +61,10 @@ public class UtilsTest {
 
 
     @Test
-    public void test_deleteTopic() {
+    public void test_deleteTopics() {
         try {
             App app = new App(SECRET_NAME);
-            app.deleteTopic();
+            app.deleteTopics(App.TOPIC);
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();
