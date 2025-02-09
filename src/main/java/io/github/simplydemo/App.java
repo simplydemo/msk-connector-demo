@@ -34,9 +34,8 @@ public class App {
     private final Utils utils = new Utils(credentialsProvider);
 
     private HashMap<String, Object> getConfig() throws Exception {
-        Map<String, String> secrets = utils.getSecrets(SECRET_NAME);
-        // final String BOOTSTRAP_SERVERS = secrets.get("BOOTSTRAP_SERVERS");
-        final String BOOTSTRAP_SERVERS = "b-1.symplydemomsk.175802.c3.kafka.ap-northeast-2.amazonaws.com:9096";
+        final Map<String, String> secrets = utils.getSecrets(SECRET_NAME);
+        final String BOOTSTRAP_SERVERS = secrets.get("BOOTSTRAP_SERVERS");
         final String USERNAME = secrets.get("username");
         final String PASSWORD = secrets.get("password");
 
