@@ -1,5 +1,6 @@
 package io.github.simplydemo;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
@@ -8,15 +9,17 @@ import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest;
 import com.amazonaws.services.secretsmanager.model.GetSecretValueResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.client.CredentialsProvider;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class Utils {
 
 
-    final ProfileCredentialsProvider credentialsProvider;
+    final AWSCredentialsProvider credentialsProvider;
 
-    public Utils(final ProfileCredentialsProvider credentialsProvider) {
+    public Utils(final AWSCredentialsProvider credentialsProvider) {
         this.credentialsProvider = credentialsProvider;
     }
 
