@@ -16,13 +16,11 @@ public class KafakaClientAuth {
 
     public static final String TOPIC = "HELLO_WORLD";
 
-    private final String PROFILE;
     private final String SECRET_NAME;
 
     private AWSCredentialsProvider credentialsProvider;
 
-    public KafakaClientAuth(final String profile, final String secretName) {
-        this.PROFILE = profile;
+    public KafakaClientAuth(final String secretName) {
         this.SECRET_NAME = secretName;
         // this.credentialsProvider = new AWSCredentialsProviderChain(new ProfileCredentialsProvider(PROFILE));
         this.credentialsProvider = new DefaultAWSCredentialsProviderChain();
