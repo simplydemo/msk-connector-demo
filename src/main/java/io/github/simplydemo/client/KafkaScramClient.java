@@ -1,6 +1,5 @@
 package io.github.simplydemo.client;
 
-import io.github.simplydemo.App;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
@@ -24,9 +23,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class KafkaScramClient {
-    private final App app;
+    private final KafakaClientAuth app;
 
-    public KafkaScramClient(App app) {
+    public KafkaScramClient(KafakaClientAuth app) {
         this.app = app;
     }
 
@@ -47,7 +46,7 @@ public class KafkaScramClient {
         props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "60000");
         props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "60000");
         try (AdminClient adminClient = AdminClient.create(props)) {
-            NewTopic newTopic = new NewTopic(App.TOPIC, 1, (short) 1);
+            NewTopic newTopic = new NewTopic(KafakaClientAuth.TOPIC, 1, (short) 1);
             adminClient.createTopics(Collections.singleton(newTopic)).all().get();
             System.out.println("Topic created successfully");
         } catch (InterruptedException | ExecutionException e) {

@@ -1,8 +1,7 @@
 package io.github.simplydemo.client;
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import io.github.simplydemo.App;
-import io.github.simplydemo.Utils;
+import io.github.simplydemo.utils.Utils;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -20,7 +19,7 @@ public class KafkaScramClientTests {
     private static final ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider("dev-sts"); // replace your AWS_PROFILE for AWS credentials
     private final Utils utils = new Utils(credentialsProvider);
 
-    final App app = new App(PROFILE, SECRET_NAME);
+    final KafakaClientAuth app = new KafakaClientAuth(PROFILE, SECRET_NAME);
 
     final KafkaScramClient client = new KafkaScramClient(app);
 
@@ -54,7 +53,7 @@ public class KafkaScramClientTests {
     @Test
     public void test104_sendMessage() {
         try {
-            client.sendMessage(App.TOPIC, "key", "Hello MSK, This is SCRAM!!!");
+            client.sendMessage(KafakaClientAuth.TOPIC, "key", "Hello MSK, This is SCRAM!!!");
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();
@@ -64,7 +63,7 @@ public class KafkaScramClientTests {
     @Test
     public void test105_consumeMessage() {
         try {
-            client.consumeMessage(App.TOPIC);
+            client.consumeMessage(KafakaClientAuth.TOPIC);
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();
@@ -75,7 +74,7 @@ public class KafkaScramClientTests {
     @Test
     public void test_deleteTopics() {
         try {
-            client.deleteTopics(App.TOPIC);
+            client.deleteTopics(KafakaClientAuth.TOPIC);
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();

@@ -1,6 +1,5 @@
 package io.github.simplydemo.client;
 
-import io.github.simplydemo.App;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -26,10 +25,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class KafkaIAMClient {
-    private final App app;
+    private final KafakaClientAuth app;
     final Map<String, String> secrets;
 
-    public KafkaIAMClient(App app) {
+    public KafkaIAMClient(KafakaClientAuth app) {
         this.app = app;
         this.secrets = app.getSecret();
     }
@@ -62,7 +61,7 @@ public class KafkaIAMClient {
     public void createTopic() {
         final String bootstrapServers = secrets.get("BOOTSTRAP_SERVERS.IAM");
         final HashMap<String, Object> props = getConfig(bootstrapServers);
-        final NewTopic newTopic = new NewTopic(App.TOPIC, 1, (short) 1);
+        final NewTopic newTopic = new NewTopic(KafakaClientAuth.TOPIC, 1, (short) 1);
         try (final AdminClient adminClient = AdminClient.create(props)) {
             adminClient.createTopics(Collections.singleton(newTopic)).all().get();
             System.out.println("Topic created successfully");

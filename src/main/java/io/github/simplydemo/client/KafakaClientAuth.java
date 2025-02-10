@@ -1,16 +1,18 @@
-package io.github.simplydemo;
+package io.github.simplydemo.client;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
 import com.amazonaws.services.securitytoken.model.GetCallerIdentityResult;
+import io.github.simplydemo.utils.Utils;
 
 import java.util.Map;
 
-public class App {
+public class KafakaClientAuth {
 
     public static final String TOPIC = "HELLO_WORLD";
 
@@ -19,15 +21,17 @@ public class App {
 
     private AWSCredentialsProvider credentialsProvider;
 
-    public App(final String profile, final String secretName) {
+    public KafakaClientAuth(final String profile, final String secretName) {
         this.PROFILE = profile;
         this.SECRET_NAME = secretName;
-        this.credentialsProvider = new AWSCredentialsProviderChain(new ProfileCredentialsProvider(PROFILE));
+        // this.credentialsProvider = new AWSCredentialsProviderChain(new ProfileCredentialsProvider(PROFILE));
+        this.credentialsProvider = new DefaultAWSCredentialsProviderChain();
     }
 
     public Map<String, String> getSecret() {
         try {
             final Utils utils = new Utils(credentialsProvider);
+            validateCredentials();
             return utils.getSecrets(SECRET_NAME);
         } catch (Exception e) {
             e.printStackTrace();
