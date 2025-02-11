@@ -37,7 +37,8 @@ public class KafkaScramClientTests {
     public void test102_secretsWithName() {
         try {
             Map<String, String> secrets = app.getSecret();
-            System.out.println(secrets.get("BOOTSTRAP_SERVERS"));
+            System.out.println(secrets);
+            assertNotNull(secrets);
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();

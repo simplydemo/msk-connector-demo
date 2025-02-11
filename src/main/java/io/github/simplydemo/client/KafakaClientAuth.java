@@ -1,9 +1,7 @@
 package io.github.simplydemo.client;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
@@ -20,16 +18,17 @@ public class KafakaClientAuth {
 
     private AWSCredentialsProvider credentialsProvider;
 
+    private final Utils utils;
+
     public KafakaClientAuth(final String secretName) {
         this.SECRET_NAME = secretName;
-        // this.credentialsProvider = new AWSCredentialsProviderChain(new ProfileCredentialsProvider(PROFILE));
         this.credentialsProvider = new DefaultAWSCredentialsProviderChain();
+        utils = new Utils(credentialsProvider);
+        // this.credentialsProvider = new AWSCredentialsProviderChain(new ProfileCredentialsProvider(PROFILE));
     }
 
     public Map<String, String> getSecret() {
         try {
-            final Utils utils = new Utils(credentialsProvider);
-            validateCredentials();
             return utils.getSecrets(SECRET_NAME);
         } catch (Exception e) {
             e.printStackTrace();

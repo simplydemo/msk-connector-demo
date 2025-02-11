@@ -23,9 +23,6 @@ public class KafkaIAMClientTests {
 
     private static final String SECRET_NAME = "AmazonMSK_dev/simplydemo/kylo"; // replace your secretName for MSK
 
-    // private static final ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider("dev-sts"); // replace your AWS_PROFILE for AWS credentials
-
-
     final KafakaClientAuth app = new KafakaClientAuth(SECRET_NAME);
 
     final KafkaIAMClient client = new KafkaIAMClient(app);
@@ -76,7 +73,6 @@ public class KafkaIAMClientTests {
             e.printStackTrace();
         }
     }
-
 
     @Test
     public void test_deleteTopics() {
