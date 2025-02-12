@@ -11,16 +11,15 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class KafkaScramClient {
     private final KafakaClientAuth app;
@@ -81,10 +80,14 @@ public class KafkaScramClient {
         Map<String, Object> props = getConfig();
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put("metadata.max.age.ms", "5000");  // 5초마다 메타데이터 리프레시
 
-        try (KafkaProducer<String, String> producer = new KafkaProducer<String, String>(props)) {
-            ProducerRecord<String, String> record = new ProducerRecord<String, String>(topic, key, message);
-            producer.send(record).get();
+        try (final KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
+            final ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, message);
+
+            Future<RecordMetadata> future = producer.send(record);
+            future.get(); // 메시지가 성공적으로 전송될 때까지 대기
+            Thread.sleep(3000); // 추가적으로 3초 대기
             System.out.println("Message sent successfully");
         } catch (InterruptedException | ExecutionException e) {
             //noinspection CallToPrintStackTrace
@@ -94,45 +97,49 @@ public class KafkaScramClient {
 
     public void consumeMessage(final String topic) throws Exception {
         final Map<String, Object> props = getConfig();
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "10000");
+        props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "300000");
+        props.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, "10000");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "MyGroup" + System.currentTimeMillis());
+        // props.put(ConsumerConfig.GROUP_ID_CONFIG, "MyFixedGroup");  // 고정 그룹 ID
+        // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");  // 최근 한 번에 최대 10 건씩 가져옮
+        // props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "NewGroup" + System.currentTimeMillis());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); // 첨부터 1건씩
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1);
+        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "MyConsumer-" + UUID.randomUUID());
 
-        try (final KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(props)) {
-            consumer.subscribe(Collections.singletonList(topic));
-            System.out.println("Subscribed to topic: " + topic);
-
-            int emptyPolls = 0;
-            while (emptyPolls < 3) { // 3번 폴링 후 종료
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
-                if (records.isEmpty()) {
-                    emptyPolls++;
-                    System.out.println("No messages received. Empty poll count: " + emptyPolls);
-                } else {
-                    emptyPolls = 0; // 메시지를 받았으면 카운터 리셋
-                    for (ConsumerRecord<String, String> record : records) {
-                        System.out.printf("Received message: topic = %s, partition = %d, offset = %d, key = %s, value = %s%n", record.topic(), record.partition(), record.offset(), record.key(), record.value());
+        int maxRetries = 3;
+        int retryCount = 0;
+        while (retryCount < maxRetries) {
+            try (final KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
+                consumer.subscribe(Collections.singletonList(topic));
+                System.out.println("Subscribed to topic: " + topic);
+                int attempts = 0;
+                while (attempts < 5) { // 최대 5번 시도
+                    final ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1)); // 1초 동안 대기
+                    if (!records.isEmpty()) {
+                        for (ConsumerRecord<String, String> record : records) {
+                            System.out.printf("Received message: topic = %s, partition = %d, offset = %d, key = %s, value = %s%n",
+                                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                        }
+                        break;
+                    } else {
+                        System.out.println("No messages received. Attempt: " + (attempts + 1));
+                        attempts++;
                     }
                 }
-            }
-            System.out.println("Consumer finished after 10 empty polls");
-        } catch (Exception e) {
-            System.out.println("Error occurred while consuming messages:");
-            //noinspection CallToPrintStackTrace
-            e.printStackTrace();
-        }
-
-        /*
-        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
-            consumer.subscribe(Collections.singletonList(topic));
-            while (true) {
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(3000));
-                for (ConsumerRecord<String, String> record : records) {
-                    System.out.printf("Received message: key = %s, value = %s%n", record.key(), record.value());
+                if (attempts == 5) {
+                    System.out.println("No messages received after 10 attempts.");
                 }
+            } catch (Exception e) {
+                System.out.println("Error occurred while consuming messages:");
+                e.printStackTrace();
             }
+            break;
         }
-         */
     }
+
 }

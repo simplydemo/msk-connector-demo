@@ -1,33 +1,32 @@
 package io.github.simplydemo.utils;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.secretsmanager.AWSSecretsManager;
-import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
-import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest;
-import com.amazonaws.services.secretsmanager.model.GetSecretValueResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.util.Map;
 
 public class Utils {
 
+    final AwsCredentialsProvider credentialsProvider;
 
-    final AWSCredentialsProvider credentialsProvider;
-
-    public Utils(final AWSCredentialsProvider credentialsProvider) {
+    public Utils(final AwsCredentialsProvider credentialsProvider) {
         this.credentialsProvider = credentialsProvider;
     }
 
     public Map<String, String> getSecrets(final String secretName) throws Exception {
-        AWSSecretsManager client = AWSSecretsManagerClientBuilder.standard()
-                .withCredentials(this.credentialsProvider)
-                .withRegion(Regions.AP_NORTHEAST_2)
+        SecretsManagerClient client = SecretsManagerClient.builder()
+                .region(Region.AP_NORTHEAST_2)
+                .credentialsProvider(credentialsProvider)
                 .build();
-        GetSecretValueRequest getSecretValueRequest = new GetSecretValueRequest().withSecretId(secretName);
-        GetSecretValueResult getSecretValueResult = client.getSecretValue(getSecretValueRequest);
-        String secret = getSecretValueResult.getSecretString();
+
+        GetSecretValueRequest getSecretValueRequest = GetSecretValueRequest.builder().secretId(secretName).build();
+        GetSecretValueResponse getSecretValueResult = client.getSecretValue(getSecretValueRequest);
+        String secret = getSecretValueResult.secretString();
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = objectMapper.readTree(secret);
 

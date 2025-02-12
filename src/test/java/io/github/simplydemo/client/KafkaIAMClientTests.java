@@ -13,30 +13,35 @@ public class KafkaIAMClientTests {
 
     private static final String PROFILE = "dev-sts"; // replace your secretName for MSK
 
-    private static final Holder CONFIG = new KafkaIAMClientTests.Holder();
+    private static final String SECRET_NAME = "AmazonMSK_dev/simplydemo/kylo"; // replace your secretName for MSK
+
+    private static final Holder HOLDER = new KafkaIAMClientTests.Holder();
 
     static class Holder {
+        final KafakaClientAuth app = new KafakaClientAuth(SECRET_NAME);
+        final KafkaIAMClient CLIENT;
+
         public Holder() {
             System.setProperty("aws.profile", PROFILE);
+            CLIENT = new KafkaIAMClient(app);
+        }
+
+        public KafkaIAMClient getInstance() {
+            return this.CLIENT;
         }
     }
 
-    private static final String SECRET_NAME = "AmazonMSK_dev/simplydemo/kylo"; // replace your secretName for MSK
-
-    final KafakaClientAuth app = new KafakaClientAuth(SECRET_NAME);
-
-    final KafkaIAMClient client = new KafkaIAMClient(app);
 
     @Test
     public void test101_init() {
-        assertNotNull(app);
-        assertNotNull(CONFIG);
+        assertNotNull(HOLDER.app);
+        assertNotNull(HOLDER.getInstance());
     }
 
     @Test
     public void test102_secretsWithName() {
         try {
-            Map<String, String> secrets = app.getSecret();
+            Map<String, String> secrets = HOLDER.app.getSecret();
             System.out.println(secrets.get("BOOTSTRAP_SERVERS.IAM"));
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
@@ -47,7 +52,7 @@ public class KafkaIAMClientTests {
     @Test
     public void test103_createTopic() {
         try {
-            client.createTopic();
+            HOLDER.getInstance().createTopic();
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();
@@ -57,7 +62,7 @@ public class KafkaIAMClientTests {
     @Test
     public void test104_sendMessage() {
         try {
-            client.sendMessage(KafakaClientAuth.TOPIC, "key", "Hello MSK, This is SCRAM!!!");
+            HOLDER.getInstance().sendMessage(KafakaClientAuth.TOPIC, "key", "Hello MSK, This is IAM!!!");
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();
@@ -67,7 +72,7 @@ public class KafkaIAMClientTests {
     @Test
     public void test105_consumeMessage() {
         try {
-            client.consumeMessage(KafakaClientAuth.TOPIC);
+            HOLDER.getInstance().consumeMessage(KafakaClientAuth.TOPIC);
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();
@@ -77,7 +82,7 @@ public class KafkaIAMClientTests {
     @Test
     public void test_deleteTopics() {
         try {
-            client.deleteTopics(KafakaClientAuth.TOPIC);
+            HOLDER.getInstance().deleteTopics(KafakaClientAuth.TOPIC);
         } catch (Exception e) {
             //noinspection CallToPrintStackTrace
             e.printStackTrace();

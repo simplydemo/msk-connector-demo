@@ -1,8 +1,6 @@
 package io.github.simplydemo.utils;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Properties;
 
 public class PropertiesLoader {

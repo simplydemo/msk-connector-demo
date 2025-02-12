@@ -1,30 +1,31 @@
 package io.github.simplydemo.client;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
-import com.amazonaws.services.securitytoken.model.GetCallerIdentityResult;
 import io.github.simplydemo.utils.Utils;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
+import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
 
 import java.util.Map;
 
+
 public class KafakaClientAuth {
+
 
     public static final String TOPIC = "HELLO_WORLD";
 
     private final String SECRET_NAME;
 
-    private AWSCredentialsProvider credentialsProvider;
+    private AwsCredentialsProvider credentialsProvider;
 
     private final Utils utils;
 
     public KafakaClientAuth(final String secretName) {
         this.SECRET_NAME = secretName;
-        this.credentialsProvider = new DefaultAWSCredentialsProviderChain();
+        this.credentialsProvider = DefaultCredentialsProvider.create();
         utils = new Utils(credentialsProvider);
-        // this.credentialsProvider = new AWSCredentialsProviderChain(new ProfileCredentialsProvider(PROFILE));
+        // this.credentialsProvider = AwsCredentialsProviderChain.create("myProfile");
     }
 
     public Map<String, String> getSecret() {
@@ -39,15 +40,15 @@ public class KafakaClientAuth {
 
     public void validateCredentials() {
         try {
-            AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
-                    .withCredentials(credentialsProvider)
+            StsClient stsClient = StsClient.builder()
+                    .credentialsProvider(credentialsProvider)
                     .build();
-            GetCallerIdentityRequest request = new GetCallerIdentityRequest();
-            GetCallerIdentityResult result = stsClient.getCallerIdentity(request);
+            GetCallerIdentityRequest request = GetCallerIdentityRequest.builder().build();
+            GetCallerIdentityResponse result = stsClient.getCallerIdentity(request);
             System.out.println("STS Authentication Successful!");
-            System.out.println("Account: " + result.getAccount());
-            System.out.println("UserId: " + result.getUserId());
-            System.out.println("Arn: " + result.getArn());
+            System.out.println("Account: " + result.account());
+            System.out.println("UserId: " + result.userId());
+            System.out.println("Arn: " + result.arn());
         } catch (Exception e) {
             System.err.println("Error validating AWS credentials: " + e.getMessage());
         }
